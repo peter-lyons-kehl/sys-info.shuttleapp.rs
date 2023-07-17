@@ -35,7 +35,8 @@ async fn run<F: Fn(&mut Command)>(program: &'static str, modify: F) -> String {
     ascii_bytes_to_string(out.stdout)
 }
 
-/// Used to locate binaries. Why? See [content].
+/// Used to locate binaries. Why? See comments inside [content].
+#[allow(dead_code)]
 async fn content_locate_binaries() -> String {
     let free = run("whereis", |prog| {
         prog.arg("free");
@@ -53,10 +54,16 @@ async fn content() -> String {
     // example in ~/.bashrc). Those prettify the output, but are not available under non-personal
     // accounts, such as daemons/web services! Hence we use full paths to executables. (That may
     // make this not portable to other OS'es, but that doesn't matter.)
+    //
+    // To complicate, Manjaro has free & df under both /usr/bin & /bin. But: Shuttle.rs does NOT
+    // have /usr/bin/df - only /bin/df.
+    //
+    // If your Linux or Mac OS doesn't support the following locations, and you can figure out how
+    // to determine it, feel free to file a pull request.
     let free = run("/usr/bin/free", |prog| {
         prog.arg("-m");
     });
-    let tmpfs = run("/usr/bin/df", |prog| {
+    let tmpfs = run("/bin/df", |prog| {
         prog.arg("-m").arg("/tmp");
     });
     let (free, tmpfs) = (free.await, tmpfs.await);
@@ -75,7 +82,7 @@ async fn axum() -> shuttle_axum::ShuttleAxum {
     assert!(cfg!(target_os = "linux"), "For Linux only.");
 
     //let router = Router::new().route("/", get(content));
-    let router = Router::new().route("/", get(content_locate_binaries));
+    let router = Router::new().route("/", get(content));
 
     Ok(router.into())
 }
