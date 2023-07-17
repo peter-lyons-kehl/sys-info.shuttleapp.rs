@@ -67,7 +67,8 @@ async fn content() -> String {
         prog.arg("-m").arg("/tmp");
     });
     let (free, tmpfs) = (free.await, tmpfs.await);
-    "Sysinfo of (free tier) Shuttle.rs. Thank you Shuttle & Love you.\n".to_owned()
+    "Sysinfo of (free tier) Shuttle.rs. Thank you Shuttle. Love you.\n".to_owned()
+        + "\n"
         + "Format and URL routing/handling are subject to change!\n"
         + "(https://github.com/peter-kehl/sys-info.shuttleapp.rs)\n\n"
         + "free -m:\n"
