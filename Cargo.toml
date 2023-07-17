@@ -2,6 +2,11 @@
 name = "sys-info"
 version = "0.1.0"
 edition = "2021"
+description = "System info & limits of free tier on Shuttle.rs"
+homepage = "https://sys-info.shuttleapp.rs"
+repository = "https://github.com/peter-kehl/sys-info.shuttleapp.rs"
+keywords = ["async", "cloud", "cloud-native", "shuttle", "shuttle-service"]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 axum = "0.6.18"
