@@ -8,6 +8,8 @@ repository = "https://github.com/peter-kehl/sys-info.shuttleapp.rs"
 keywords = ["async", "cloud", "cloud-native", "shuttle", "shuttle-service"]
 license = "MIT OR Apache-2.0"
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies]
 # -> 0.6.19
 axum = "0.6.19"
