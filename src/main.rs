@@ -35,6 +35,18 @@ async fn run<F: Fn(&mut Command)>(program: &'static str, modify: F) -> String {
     ascii_bytes_to_string(out.stdout)
 }
 
+/// Used to locate binaries. Why? See [content].
+async fn content_locate_binaries() -> String {
+    let free = run("whereis", |prog| {
+        prog.arg("free");
+    });
+    let df = run("whereis", |prog| {
+        prog.arg("df");
+    });
+    let (free, df) = (free.await, df.await);
+    "".to_owned() + &free + "\n" + &df
+}
+
 /// Content returned over HTTP.
 async fn content() -> String {
     // Beware: Some Unix distributions (at least Manjaro, possibly Arch, too) have aliases set (for
@@ -62,7 +74,8 @@ async fn content() -> String {
 async fn axum() -> shuttle_axum::ShuttleAxum {
     assert!(cfg!(target_os = "linux"), "For Linux only.");
 
-    let router = Router::new().route("/", get(content));
+    //let router = Router::new().route("/", get(content));
+    let router = Router::new().route("/", get(content_locate_binaries));
 
     Ok(router.into())
 }
