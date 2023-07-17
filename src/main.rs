@@ -37,12 +37,25 @@ async fn run<F: Fn(&mut Command)>(program: &'static str, modify: F) -> String {
 
 /// Content returned over HTTP.
 async fn content() -> String {
-    let free = run("free", |_| ());
-    let tmpfs = run("df", |prog| {
+    // Beware: Some Unix distributions (at least Manjaro, possibly Arch, too) have aliases set (for
+    // example in ~/.bashrc). Those prettify the output, but are not available under non-personal
+    // accounts, such as daemons/web services! Hence we use full paths to executables. (That may
+    // make this not portable to other OS'es, but that doesn't matter.)
+    let free = run("/usr/bin/free", |prog| {
+        prog.arg("-m");
+    });
+    let tmpfs = run("/usr/bin/df", |prog| {
         prog.arg("-m").arg("/tmp");
     });
     let (free, tmpfs) = (free.await, tmpfs.await);
-    format!("{free}\n{tmpfs}")
+    "Sysinfo of (free tier) Shuttle.rs. Thank you Shuttle & Love you.\n".to_owned()
+        + "Format and URL routing/handling are subject to change!\n"
+        + "(https://github.com/peter-kehl/sys-info.shuttleapp.rs)\n\n"
+        + "free -m:\n"
+        + &free
+        + "\n-----\n\n"
+        + "df -m /tmp:\n"
+        + &tmpfs
 }
 
 #[shuttle_runtime::main]
