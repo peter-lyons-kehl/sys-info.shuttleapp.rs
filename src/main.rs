@@ -1,5 +1,6 @@
 use axum::{routing::get, Router};
 //use std::process::{ExitStatus, Output};
+use core::future::Future;
 use tokio::process::Command;
 
 /// Crate a new [Command] based on `program`. Set it to `kill_on_drop`.
@@ -35,17 +36,20 @@ async fn run<F: Fn(&mut Command)>(program: &'static str, modify: F) -> String {
     ascii_bytes_to_string(out.stdout)
 }
 
+fn where_is(program: &'static str) -> impl Future<Output = String> {
+    run("whereis", move |prog| {
+        prog.arg(program);
+    })
+}
+
 /// Used to locate binaries. Why? See comments inside [content].
 #[allow(dead_code)]
 async fn content_locate_binaries() -> String {
-    let free = run("whereis", |prog| {
-        prog.arg("free");
-    });
-    let df = run("whereis", |prog| {
-        prog.arg("df");
-    });
-    let (free, df) = (free.await, df.await);
-    "".to_owned() + &free + "\n" + &df
+    let free = where_is("free");
+    let df = where_is("df");
+    let mount = where_is("mount");
+    let (free, df, mount) = (free.await, df.await, mount.await);
+    "".to_owned() + &free + "\n" + &df + "\n" + &mount
 }
 
 /// Content returned over HTTP.
@@ -55,18 +59,20 @@ async fn content() -> String {
     // accounts, such as daemons/web services! Hence we use full paths to executables. (That may
     // make this not portable to other OS'es, but that doesn't matter.)
     //
-    // To complicate, Manjaro has free & df under both /usr/bin & /bin. But: Shuttle.rs does NOT
-    // have /usr/bin/df - only /bin/df.
+    // To complicate, Manjaro has free, df & mount under both /usr/bin & /bin. But: Shuttle.rs does
+    // NOT have /usr/bin/df, nor /usr/bin/mount - only /bin/df & /bin/mount.
     //
     // If your Linux or Mac OS doesn't support the following locations, and you can figure out how
     // to determine it, feel free to file a pull request.
     let free = run("/usr/bin/free", |prog| {
         prog.arg("-m");
     });
-    let tmpfs = run("/bin/df", |prog| {
-        prog.arg("-m").arg("/tmp");
+    // As of July 2023, shuttle.rs doesn't have /tmp, but has /dev/shm instead.
+    let shm = run("/bin/df", |prog| {
+        prog.arg("-m").arg("/dev/shm");
     });
-    let (free, tmpfs) = (free.await, tmpfs.await);
+    let mount = run("/bin/mount", |_| ());
+    let (free, shm, mount) = (free.await, shm.await, mount.await);
     "Sysinfo of (free tier) Shuttle.rs. Thank you Shuttle. Love you.\n".to_owned()
         + "\n"
         + "Format and URL routing/handling are subject to change!\n"
@@ -74,8 +80,11 @@ async fn content() -> String {
         + "free -m:\n"
         + &free
         + "\n-----\n\n"
-        + "df -m /tmp:\n"
-        + &tmpfs
+        + "df -m /dev/shm:\n"
+        + &shm
+        + "\n-----\n\n"
+        + "mount:\n"
+        + &mount
 }
 
 #[shuttle_runtime::main]
@@ -84,6 +93,7 @@ async fn axum() -> shuttle_axum::ShuttleAxum {
 
     //let router = Router::new().route("/", get(content));
     let router = Router::new().route("/", get(content));
+    //let router = Router::new().route("/", get(content_locate_binaries));
 
     Ok(router.into())
 }
