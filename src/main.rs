@@ -3,7 +3,7 @@ use axum::{routing::get, Router};
 use core::future::Future;
 use tokio::process::Command;
 
-/// Crate a new [Command] based on `program`. Set it to `kill_on_drop`.
+/// Create a new [Command] based on `program`. Set it to `kill_on_drop`.
 fn command(program: &'static str) -> Command {
     let mut command = Command::new(program);
     command.kill_on_drop(true);
@@ -43,7 +43,6 @@ fn where_is(program: &'static str) -> impl Future<Output = String> {
 }
 
 /// Used to locate binaries. Why? See comments inside [content].
-#[allow(dead_code)]
 async fn content_locate_binaries() -> String {
     let free = where_is("free");
     let df = where_is("df");
@@ -91,9 +90,9 @@ async fn content() -> String {
 async fn axum() -> shuttle_axum::ShuttleAxum {
     assert!(cfg!(target_os = "linux"), "For Linux only.");
 
-    //let router = Router::new().route("/", get(content));
-    let router = Router::new().route("/", get(content));
-    //let router = Router::new().route("/", get(content_locate_binaries));
+    let router = Router::new();
+    let router = router.route("/locate_binaries", get(content_locate_binaries));
+    let router = router.route("/", get(content));
 
     Ok(router.into())
 }
